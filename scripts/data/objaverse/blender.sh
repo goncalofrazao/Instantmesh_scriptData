@@ -4,10 +4,10 @@
 start_time=$(date +%s)
 start_date=$(date)
 
-DIRECTORY="/your/path/OpenLRM/data"     # data absolute path
-for glb_file in $DIRECTORY/*.glb; do
+DIRECTORY="/home/gonfrazao/InstantMesh/data/objs2"     # data absolute path
+for glb_file in $DIRECTORY/*.obj; do
   echo "Processing $glb_file"
-  blender -b -noaudio  -P blender_script.py -- --object_path $glb_file
+  /blender-4.2.3-linux-x64/blender -b -noaudio  -P blender_script.py -- --object_path $glb_file --output_dir /home/gonfrazao/InstantMesh/data/test --resolution 512 --num_images 12
 done
 
 # Record the end time and convert to date and time

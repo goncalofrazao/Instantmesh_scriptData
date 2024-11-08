@@ -9,6 +9,7 @@ import urllib.request
 from mathutils import Vector
 import numpy as np
 import bpy
+import math
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -76,15 +77,26 @@ def sample_spherical(radius_min=1.5, radius_max=2.0, maxz=1.6, minz=-0.75):
     return vec
 
 
-def set_camera_location(camera, option: str):
-    assert option in ['fixed', 'random', 'front']
+def set_camera_location(camera, option: int):
+    # assert option in ['fixed', 'random', 'front']
 
-    if option == 'fixed':
-        x, y, z = 0, -2.25, 0
-    elif option == 'random':
-        x, y, z = sample_spherical(radius_min=1.9, radius_max=2.6, maxz=1.60, minz=-0.75)
-    elif option == 'front':
-        x, y, z = 0, -np.random.uniform(1.9, 2.6, 1)[0], 0
+    # if option == 'fixed':
+    #     x, y, z = 0, -2.25, 0
+    # elif option == 'random':
+    #     x, y, z = sample_spherical(radius_min=1.9, radius_max=2.6, maxz=1.60, minz=-0.75)
+    # elif option == 'front':
+    #     x, y, z = 0, -np.random.uniform(1.9, 2.6, 1)[0], 0
+
+    cam_distance = 4.0
+    azimuths = np.array([0, 30, 90, 150, 210, 270, 330])
+    elevations = np.array([0, 20, -10, 20, -10, 20, -10])
+
+    if option < 7:
+        x = cam_distance * math.cos(math.radians(elevations[option])) * math.sin(math.radians(azimuths[option]))
+        y = - cam_distance * math.cos(math.radians(elevations[option])) * math.cos(math.radians(azimuths[option]))
+        z = cam_distance * math.sin(math.radians(elevations[option]))
+    else:
+        x, y, z = sample_spherical(radius_min=4, radius_max=4, maxz=1.60, minz=-0.75)
 
     camera.location = x, y, z
     direction = - camera.location
@@ -136,6 +148,8 @@ def load_object(object_path: str) -> None:
         bpy.ops.import_scene.gltf(filepath=object_path)
     elif object_path.endswith(".fbx"):
         bpy.ops.import_scene.fbx(filepath=object_path)
+    elif object_path.endswith(".obj"):
+        bpy.ops.wm.obj_import(filepath=object_path)
     else:
         raise ValueError(f"Unsupported file type: {object_path}")
 
@@ -184,11 +198,13 @@ def normalize_scene(box_scale: float):
 def setup_camera():
     cam = scene.objects["Camera"]
     cam.location = (0, 1.2, 0)
-    cam.data.lens = 24
-    cam.data.sensor_width = 32
-    cam.data.sensor_height = 32
-    cam.data.clip_start = 0.01
-    cam.data.clip_end = 6.0
+    cam.data.lens_unit = "FOV"
+    cam.data.angle = math.radians(30)
+    # cam.data.lens = 24
+    # cam.data.sensor_width = 32
+    # cam.data.sensor_height = 32
+    # cam.data.clip_start = 0.01
+    # cam.data.clip_end = 6.0
     cam_constraint = cam.constraints.new(type="TRACK_TO")
     cam_constraint.track_axis = "TRACK_NEGATIVE_Z"
     cam_constraint.up_axis = "UP_Y"
@@ -276,8 +292,8 @@ def save_images(object_file: str) -> None:
         normal_save.format.color_mode = 'RGBA'
 
         # Set the camera position
-        camera_option = 'random' if i > 0 else 'front'
-        camera = set_camera_location(camera, option=camera_option)
+        # camera_option = 'random' if i > 0 else 'front'
+        camera = set_camera_location(camera, option=i)
         bpy.ops.render.render(write_still=True)
 
         # Save camera RT matrix (C2W)
